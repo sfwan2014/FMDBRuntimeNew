@@ -354,10 +354,6 @@
                 if (value == nil) {
                     value = @"";
                 }
-                //                SEL selector = [self getSetterSelWithAttibuteName:key];
-                //                if ([model respondsToSelector:selector]) {
-                //                    [model performSelector:selector withObject:value];
-                //                }
                 
                 [propertyDic setObject:value forKey:key];
             }
