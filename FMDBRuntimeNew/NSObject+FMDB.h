@@ -48,6 +48,16 @@ typedef void(^QueryListFinishBlock) (NSArray *list);
                      owner:(NSString *)ownerId;
 
 /*
+ * 插入或更新 (联合主键)
+ * values 对应条件的主键值列表 ,keys 对应条件的 主键名列表
+ * ownerId(登陆用户id, 所有者) 有则更新该用户下的数据, 无则更新无该约束的数据
+ *
+ */
+-(void)insertOrUpdateValues:(NSArray *)values
+                    forKeys:(NSArray *)keys
+                      owner:(NSString *)ownerId;
+
+/*
  * 更新
  * value 对应条件的值 ,key 对应条件的 名
  * ownerId(登陆用户id, 所有者) 有则更新该用户下的数据, 无则更新无该约束的数据

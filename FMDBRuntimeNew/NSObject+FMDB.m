@@ -199,20 +199,73 @@
  *
  */
 -(void)insertOrUpdateValue:(NSString *)value forKey:(NSString *)key owner:(NSString *)ownerId{
+
+    [self insertOrUpdateValues:@[value] forKeys:@[key] owner:ownerId];
+    
+//    NSString *tableName = [[self class] tableName];
+//    NSString * sql = [NSString stringWithFormat:@"SELECT * FROM %@ where %@ = '%@' AND %@ = '%@'", tableName, key, value, kOwnerName, ownerId];
+//    if (!ownerId) {
+//        sql = [NSString stringWithFormat:@"SELECT * FROM %@ where %@ = '%@'", tableName, key, value];
+//    }
+//    [[self class] queryWithSql:sql block:^(NSArray *list) {
+//        if (list.count > 0) {
+//            [self updateValue:value forKey:key owner:ownerId];
+//        } else {
+//            [self insertWithOwner:ownerId];
+//        }
+//    }];
+}
+
+/*
+ * 插入或更新 (联合主键)
+ * values 对应条件的值列表 ,keys 对应条件的 名列表
+ * ownerId(登陆用户id, 所有者) 有则更新该用户下的数据, 无则更新无该约束的数据
+ *
+ */
+-(void)insertOrUpdateValues:(NSArray *)values forKeys:(NSArray *)keys owner:(NSString *)ownerId{
+    
+    if (values.count != keys.count) {
+        assert(@"主键的值列表与主键的名列表的个数不一样");
+        return;
+    }
     
     NSString *tableName = [[self class] tableName];
-    NSString * sql = [NSString stringWithFormat:@"SELECT * FROM %@ where %@ = '%@' AND %@ = '%@'", tableName, key, value, kOwnerName, ownerId];
+    
+    NSMutableString *bodySql = [NSMutableString string];
+    NSMutableString *sql = [NSMutableString string];
+    
     if (!ownerId) {
-        sql = [NSString stringWithFormat:@"SELECT * FROM %@ where %@ = '%@'", tableName, key, value];
+        sql = [NSMutableString stringWithFormat:@"SELECT * FROM %@ where ", tableName];
+        for (int i = 0; i < values.count; i++) {
+            id value = values[i];
+            id key = keys[i];
+            if (i == 0) {
+                [bodySql appendFormat:@"%@ = '%@'", key, value];
+            } else {
+                [bodySql appendFormat:@" AND %@ = '%@'", key, value];
+            }
+        }
+        
+    } else {
+        sql = [NSMutableString stringWithFormat:@"SELECT * FROM %@ where %@ = '%@'", tableName, kOwnerName, ownerId];
+        for (int i = 0; i < values.count; i++) {
+            id value = values[i];
+            id key = keys[i];
+            [bodySql appendFormat:@" AND %@ = '%@'", key, value];
+        }
     }
+    
+    [sql appendString:bodySql];
+    
     [[self class] queryWithSql:sql block:^(NSArray *list) {
         if (list.count > 0) {
-            [self updateValue:value forKey:key owner:ownerId];
+            [self updateValues:values forKeys:keys owner:ownerId];
         } else {
             [self insertWithOwner:ownerId];
         }
     }];
 }
+
 
 // UPDATE CircleDetailTable SET _gchat_desc = 'Fred' WHERE _ownerId = '3826'
 
@@ -223,6 +276,45 @@
  *
  */
 -(void)updateValue:(NSString *)var forKey:(NSString *)valueKey owner:(NSString *)ownerId{
+    
+    [self updateValues:@[var] forKeys:@[valueKey] owner:ownerId];
+    
+//    NSDictionary *attributeDic = [self attributeProrertyDic];
+//    NSArray *allKeys = [attributeDic allKeys];
+//    
+//    NSString *tableName = [[self class] tableName];
+//    
+//    NSString *headSql = [NSString stringWithFormat:@"UPDATE %@ SET ", tableName];
+//    NSMutableString *valueSql = [NSMutableString stringWithFormat:@""];
+//    
+//    for (int i = 0; i < allKeys.count; i++) {
+//        NSString *key = allKeys[i];
+//        id value = attributeDic[key];
+//        key = [key substringFromIndex:1];
+//        if (i == allKeys.count -1) {
+//            [valueSql appendFormat:@"%@='%@'", key, value];
+//            break;
+//        }
+//        [valueSql appendFormat:@"%@='%@',", key, value];
+//    }
+//    
+//    NSString *footerSql = [NSString stringWithFormat:@"WHERE %@='%@' AND %@='%@'", kOwnerName, ownerId, valueKey, var];
+//    if (!ownerId) {
+//        footerSql = [NSString stringWithFormat:@"WHERE %@='%@'", valueKey, var];
+//    }
+//    
+//    NSString *sql = [NSString stringWithFormat:@"%@%@%@", headSql, valueSql, footerSql];
+//    
+//    [[SFDataManager shareDataManager] updateSql:sql];
+}
+
+/*
+ * 更新
+ * value 对应条件的值 ,key 对应条件的 名
+ * ownerId(登陆用户id, 所有者) 有则更新该用户下的数据, 无则更新无该约束的数据
+ *
+ */
+-(void)updateValues:(NSArray *)values forKeys:(NSArray *)valueKeys owner:(NSString *)ownerId{
     NSDictionary *attributeDic = [self attributeProrertyDic];
     NSArray *allKeys = [attributeDic allKeys];
     
@@ -242,15 +334,39 @@
         [valueSql appendFormat:@"%@='%@',", key, value];
     }
     
-    NSString *footerSql = [NSString stringWithFormat:@"WHERE %@='%@' AND %@='%@'", kOwnerName, ownerId, valueKey, var];
+    NSMutableString *footerSql = [NSMutableString string];
     if (!ownerId) {
-        footerSql = [NSString stringWithFormat:@"WHERE %@='%@'", valueKey, var];
+        footerSql = [NSMutableString stringWithFormat:@" where "];
+        for (int i = 0; i < values.count; i++) {
+            id value = values[i];
+            id key = valueKeys[i];
+            if (i == 0) {
+                [footerSql appendFormat:@"%@ = '%@'", key, value];
+            } else {
+                [footerSql appendFormat:@" AND %@ = '%@'", key, value];
+            }
+        }
+    } else {
+        footerSql = [NSMutableString stringWithFormat:@" where %@ = '%@'", kOwnerName, ownerId];
+        for (int i = 0; i < values.count; i++) {
+            id value = values[i];
+            id key = valueKeys[i];
+            [footerSql appendFormat:@" AND %@ = '%@'", key, value];
+        }
     }
+    
+//    NSString *footerSql = [NSString stringWithFormat:@"WHERE %@='%@' AND %@='%@'", kOwnerName, ownerId, valueKey, var];
+//    if (!ownerId) {
+//        footerSql = [NSString stringWithFormat:@"WHERE %@='%@'", valueKey, var];
+//    } else {
+//        
+//    }
     
     NSString *sql = [NSString stringWithFormat:@"%@%@%@", headSql, valueSql, footerSql];
     
     [[SFDataManager shareDataManager] updateSql:sql];
 }
+
 /*
  * 插入
  * ownerId 所有者(登陆用户的id), 有则关联,无则不关联
