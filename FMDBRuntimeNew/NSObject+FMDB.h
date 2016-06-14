@@ -38,6 +38,11 @@ typedef void(^QueryListFinishBlock) (NSArray *list);
                owner:(BOOL)hasOwner;
 
 /*
+ * alert table
+ */
++(void)alertTableWithSql:(NSString *)sql;
+
+/*
  * 插入或更新
  * value 对应条件的值 ,key 对应条件的 名
  * ownerId(登陆用户id, 所有者) 有则更新该用户下的数据, 无则更新无该约束的数据
@@ -97,6 +102,12 @@ typedef void(^QueryListFinishBlock) (NSArray *list);
 +(void)queryWithParams:(NSDictionary *)params
                  block:(QueryListFinishBlock)block;
 /*
+ * 查询
+ * params 要检索的键值对 (包含关系)
+ */
++(void)queryWithLikesParams:(NSDictionary *)params
+                      block:(QueryListFinishBlock)block;
+/*
  * 删除
  * value 对应条件的值 ,key 对应条件的 名
  * ownerId (所有者, 登陆用户的id)有则删掉ownerid对应符合条件的行, 无则删除所以符合条件的行
@@ -112,5 +123,7 @@ typedef void(^QueryListFinishBlock) (NSArray *list);
  */
 +(void)clearWithOwner:(NSString *)ownerId;
 +(void)clearWithParams:(NSDictionary *)params;
+
++(void)dropTable;
 
 @end

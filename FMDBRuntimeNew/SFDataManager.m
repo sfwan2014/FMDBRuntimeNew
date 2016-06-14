@@ -12,6 +12,10 @@
     FMDatabase *db;
 }
 
+-(void)dealloc{
+    
+}
+
 +(SFDataManager *)shareDataManager{
     static SFDataManager *instance = nil;
     static dispatch_once_t onceToken;

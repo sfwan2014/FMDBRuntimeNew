@@ -166,21 +166,49 @@
  */
 +(void)createWithKey:(NSArray *)primaryKeys owner:(BOOL)hasOwner{
     
+    [self createAlertWithKey:primaryKeys owner:hasOwner];
+    
+//    NSString *tableName = [[self class]tableName];
+//    //    NSString *primaryKey = [[self class] primaryKey];
+//    
+//    id model = [[self alloc] init];
+//    NSArray *attributes = [model attributePropertyList];
+//    
+//    NSMutableString *mutSql = [NSMutableString stringWithFormat:@"CREATE TABLE IF NOT EXISTS '%@' (",tableName];
+//    for (int i = 0; i < attributes.count; i++) {
+//        NSString *key = attributes[i];
+//        key = [key substringFromIndex:1];
+//        NSString *proType = @"BLOB";
+//        
+//        [mutSql appendFormat:@"'%@' %@, ", key, proType];
+//        
+//    }
+//    if (hasOwner) {
+//        // 登陆用户id
+//        [mutSql appendFormat:@"'%@' BLOB,", kOwnerName];
+//    }
+//    // 设置联合主键
+//    NSString *primaryKey = [primaryKeys componentsJoinedByString:@","];
+//    [mutSql appendFormat:@"PRIMARY KEY(%@))", primaryKey];
+//    
+//    [[SFDataManager shareDataManager] createTableWithSql:mutSql];
+}
+
++(void)createAlertWithKey:(NSArray *)primaryKeys owner:(BOOL)hasOwner{
+    
     NSString *tableName = [[self class]tableName];
-    //    NSString *primaryKey = [[self class] primaryKey];
-    
-    id model = [[self alloc] init];
-    NSArray *attributes = [model attributePropertyList];
-    
     NSMutableString *mutSql = [NSMutableString stringWithFormat:@"CREATE TABLE IF NOT EXISTS '%@' (",tableName];
-    for (int i = 0; i < attributes.count; i++) {
-        NSString *key = attributes[i];
-        key = [key substringFromIndex:1];
+    
+    for (NSString *key in primaryKeys) {
+        if (hasOwner) {
+            if ([key isEqualToString:kOwnerName]) {
+                continue;
+            }
+        }
         NSString *proType = @"BLOB";
-        
         [mutSql appendFormat:@"'%@' %@, ", key, proType];
-        
     }
+    
     if (hasOwner) {
         // 登陆用户id
         [mutSql appendFormat:@"'%@' BLOB,", kOwnerName];
@@ -189,7 +217,26 @@
     NSString *primaryKey = [primaryKeys componentsJoinedByString:@","];
     [mutSql appendFormat:@"PRIMARY KEY(%@))", primaryKey];
     
+    
     [[SFDataManager shareDataManager] createTableWithSql:mutSql];
+    
+    // 添加字段
+    [self alertTable:tableName];
+}
+
++(void)alertTable:(NSString *)tableName{
+    id model = [[self alloc] init];
+    NSArray *attributes = [model attributePropertyList];
+    for (NSString *key in attributes) {
+        NSString *newKey = [key substringFromIndex:1];
+        NSString *alertSql = [NSString stringWithFormat:@"ALTER TABLE %@ ADD %@ BLOB", tableName, newKey];
+        [self alertTableWithSql:alertSql];
+    }
+}
+
+
++(void)alertTableWithSql:(NSString *)sql{
+    [[SFDataManager shareDataManager] updateSql:sql];
 }
 
 /*
@@ -199,7 +246,9 @@
  *
  */
 -(void)insertOrUpdateValue:(NSString *)value forKey:(NSString *)key owner:(NSString *)ownerId{
-
+    if (value == nil) {
+        return;
+    }
     [self insertOrUpdateValues:@[value] forKeys:@[key] owner:ownerId];
     
 //    NSString *tableName = [[self class] tableName];
@@ -363,7 +412,7 @@
 //    }
     
     NSString *sql = [NSString stringWithFormat:@"%@%@%@", headSql, valueSql, footerSql];
-    
+    NSLog(@"%@", sql);
     [[SFDataManager shareDataManager] updateSql:sql];
 }
 
@@ -522,6 +571,30 @@
 }
 
 /*
+ * 查询
+ * params 要检索的键值对 (包含关系)
+ */
++(void)queryWithLikesParams:(NSDictionary *)params
+                      block:(QueryListFinishBlock)block{
+    NSMutableString * sqlHead = [NSMutableString stringWithFormat:@"SELECT * FROM %@ ",[self tableName]];
+    NSArray *allKeys = [params allKeys];
+    NSMutableString *sqlBody = [NSMutableString string];
+    for (int i = 0; i < allKeys.count; i++) {
+        NSString *key = allKeys[i];
+        id value = params[key];
+        if (i == 0) {
+            [sqlBody appendFormat:@"WHERE %@ LIKE '%%%@%%'", key, value];
+            continue;
+        }
+        [sqlBody appendFormat:@"OR %@ LIKE '%%%@%%'", key, value];
+    }
+    
+    NSString * sql = [NSString stringWithFormat:@"%@ %@",sqlHead, sqlBody];
+    //    [self queryWithSql:sql block:block];
+    [self queryWithSql:sql responseModelBlock:block];
+}
+
+/*
  * 删除
  * value 对应条件的值 ,key 对应条件的 名
  * ownerId (所有者, 登陆用户的id)有则删掉ownerid对应符合条件的行, 无则删除所以符合条件的行
@@ -548,6 +621,7 @@
     if (!ownerId) {
         sql = [NSString stringWithFormat:@"DELETE FROM %@ ",tableName];
     }
+    EKNSLog(@"sql %@", sql);
     [[SFDataManager shareDataManager] deleteSql:sql];
 }
 
@@ -583,6 +657,13 @@
     
     NSString * sql = [NSString stringWithFormat:@"%@ %@",sqlHead, sqlBody];
     
+    [[SFDataManager shareDataManager] deleteSql:sql];
+}
+
++(void)dropTable{
+    
+    NSString *tableName = [self tableName];
+    NSString * sql = [NSString stringWithFormat:@"drop table %@",tableName];
     [[SFDataManager shareDataManager] deleteSql:sql];
 }
 
