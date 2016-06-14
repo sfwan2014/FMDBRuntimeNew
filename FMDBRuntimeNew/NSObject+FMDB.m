@@ -621,7 +621,7 @@
     if (!ownerId) {
         sql = [NSString stringWithFormat:@"DELETE FROM %@ ",tableName];
     }
-    EKNSLog(@"sql %@", sql);
+    NSLog(@"sql %@", sql);
     [[SFDataManager shareDataManager] deleteSql:sql];
 }
 
