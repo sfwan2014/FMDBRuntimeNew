@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   #
 
   s.name         = "FMDBRuntimeNew"
-  s.version      = "1.1"
+  s.version      = "2.0"
   s.summary      = "Use FMDB With Runtime to insert,delete,query the data"
 
   s.description  = <<-DESC
@@ -45,7 +45,7 @@ Pod::Spec.new do |s|
 
   s.platform     = :ios, '6.0'
 
-  s.source       = { :git => "https://github.com/sfwan2014/FMDBRuntimeNew.git", :tag => "1.1" }
+  s.source       = { :git => "https://github.com/sfwan2014/FMDBRuntimeNew.git", :tag => s.version.to_s }
 
   s.source_files  = 'FMDBRuntimeNew/*'
 
