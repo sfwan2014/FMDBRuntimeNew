@@ -47,8 +47,7 @@ Pod::Spec.new do |s|
 
   s.source       = { :git => "https://github.com/sfwan2014/FMDBRuntimeNew.git", :tag => s.version.to_s }
 
-  s.source_files  = 'FMDBRuntimeNew/*'
-
+  s.source_files = 'FMDBRuntimeNew/*.{h,m}'
   s.frameworks = 'Foundation', 'UIKit'
   s.library = "sqlite3.0"
 

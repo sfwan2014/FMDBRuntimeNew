@@ -101,14 +101,31 @@
 #pragma mark - getter
 -(NSString *)filePath{
 
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *documentDirectory = [paths objectAtIndex:0];
-    NSString *dbPath = [documentDirectory stringByAppendingPathComponent:@"EKuDataBase.sqlite"];
+    NSString *documentDirectory = [self cachePath];
+    NSString *dbPath = [documentDirectory stringByAppendingPathComponent:@"dbc.sqlite"];
     
     NSLog(@"cachepath: %@", dbPath);
     
     return dbPath;
 }
 
+
+-(NSString *)cachePath{
+    //获取Documents路径
+    NSArray*paths=NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
+    NSString*path=[paths objectAtIndex:0];
+    NSString *fileDirectory = [NSString stringWithFormat:@"%@/%@", path, @"list_data"];
+    NSFileManager *fm = [NSFileManager defaultManager];
+    BOOL isDirectory = NO;
+    if (![fm fileExistsAtPath:fileDirectory isDirectory:&isDirectory]) {
+        NSError *error = nil;
+        BOOL res = [fm createDirectoryAtPath:fileDirectory withIntermediateDirectories:YES attributes:nil error:&error];
+        if (res == YES) {
+            return fileDirectory;
+        }
+        assert("创建目录失败");
+    }
+    return fileDirectory;
+}
 
 @end

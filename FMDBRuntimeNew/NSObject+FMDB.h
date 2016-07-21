@@ -107,6 +107,13 @@ typedef void(^QueryListFinishBlock) (NSArray *list);
  */
 +(void)queryWithLikesParams:(NSDictionary *)params
                       block:(QueryListFinishBlock)block;
+
+/*
+ * 查询
+ * params 要检索的键值对 (以xxx开头)
+ */
++(void)queryWithNearParams:(NSDictionary *)params
+                      block:(QueryListFinishBlock)block;
 /*
  * 删除
  * value 对应条件的值 ,key 对应条件的 名

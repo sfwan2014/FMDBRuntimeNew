@@ -412,7 +412,7 @@
 //    }
     
     NSString *sql = [NSString stringWithFormat:@"%@%@%@", headSql, valueSql, footerSql];
-    NSLog(@"%@", sql);
+//    NSLog(@"%@", sql);
     [[SFDataManager shareDataManager] updateSql:sql];
 }
 
@@ -435,12 +435,21 @@
     NSMutableDictionary *newDic = [NSMutableDictionary dictionary];
     for (int i = 0; i < allKeys.count; i++) {
         NSString *key = allKeys[i];
-        NSString *value = attributeDic[key];
+        id value = attributeDic[key];
         key = [key substringFromIndex:1];
-        if (value == nil || (![value isKindOfClass:[NSNumber class]] && value.length == 0)) {
-            continue;
+        if ([value isKindOfClass:[NSString class]] && ((NSString*)value).length > 0) {
+            [newDic setObject:value forKey:key];
         }
-        [newDic setObject:value forKey:key];
+        if ([value isKindOfClass:[NSNumber class]] && value != nil) {
+            [newDic setObject:value forKey:key];
+        }
+        if ([value isKindOfClass:[NSArray class]]) {
+            // 数组处理
+            
+            // 模型处理
+        }
+        
+        
     }
     
     if (ownerId) {
@@ -562,7 +571,7 @@
             [sqlBody appendFormat:@"WHERE %@ = '%@'", key, value];
             continue;
         }
-        [sqlBody appendFormat:@"AND %@ = '%@'", key, value];
+        [sqlBody appendFormat:@" AND %@ = '%@'", key, value];
     }
     
     NSString * sql = [NSString stringWithFormat:@"%@ %@",sqlHead, sqlBody];
@@ -583,10 +592,36 @@
         NSString *key = allKeys[i];
         id value = params[key];
         if (i == 0) {
+            // a%
             [sqlBody appendFormat:@"WHERE %@ LIKE '%%%@%%'", key, value];
             continue;
         }
         [sqlBody appendFormat:@"OR %@ LIKE '%%%@%%'", key, value];
+    }
+    
+    NSString * sql = [NSString stringWithFormat:@"%@ %@",sqlHead, sqlBody];
+    //    [self queryWithSql:sql block:block];
+    [self queryWithSql:sql responseModelBlock:block];
+}
+
+/*
+ * 查询
+ * params 要检索的键值对 (以xxx开头)
+ */
++(void)queryWithNearParams:(NSDictionary *)params
+                     block:(QueryListFinishBlock)block{
+    NSMutableString * sqlHead = [NSMutableString stringWithFormat:@"SELECT * FROM %@ ",[self tableName]];
+    NSArray *allKeys = [params allKeys];
+    NSMutableString *sqlBody = [NSMutableString string];
+    for (int i = 0; i < allKeys.count; i++) {
+        NSString *key = allKeys[i];
+        id value = params[key];
+        if (i == 0) {
+            // a%
+            [sqlBody appendFormat:@"WHERE %@ LIKE '%@%%'", key, value];
+            continue;
+        }
+        [sqlBody appendFormat:@"OR %@ LIKE '%@%%'", key, value];
     }
     
     NSString * sql = [NSString stringWithFormat:@"%@ %@",sqlHead, sqlBody];
@@ -621,7 +656,7 @@
     if (!ownerId) {
         sql = [NSString stringWithFormat:@"DELETE FROM %@ ",tableName];
     }
-    NSLog(@"sql %@", sql);
+//    EKNSLog(@"sql %@", sql);
     [[SFDataManager shareDataManager] deleteSql:sql];
 }
 
