@@ -61,6 +61,16 @@ typedef void(^QueryListFinishBlock) (NSArray *list);
 -(void)insertOrUpdateValues:(NSArray *)values
                     forKeys:(NSArray *)keys
                       owner:(NSString *)ownerId;
+/**
+ * 批量插入或更新
+ * groups 需要操作的数据组
+ * values 对应条件的主键值列表[[value],[value]] ,keys 对应条件的 主键名列表[[key],[key]]
+ * ownerId(登陆用户id, 所有者) 有则更新该用户下的数据, 无则更新无该约束的数据
+ */
++(void)insertOrUpdateGroups:(NSArray<NSObject> *)groups
+                     values:(NSArray<NSArray*> *)values
+                    forKeys:(NSArray<NSArray*> *)keys
+                      owner:(NSString *)ownerId;
 
 /*
  * 更新

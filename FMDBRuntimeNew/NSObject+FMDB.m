@@ -265,18 +265,10 @@
 //    }];
 }
 
-/*
- * 插入或更新 (联合主键)
- * values 对应条件的值列表 ,keys 对应条件的 名列表
- * ownerId(登陆用户id, 所有者) 有则更新该用户下的数据, 无则更新无该约束的数据
- *
+/**
+ * 获取查询SQL
  */
--(void)insertOrUpdateValues:(NSArray *)values forKeys:(NSArray *)keys owner:(NSString *)ownerId{
-    
-    if (values.count != keys.count) {
-        assert(@"主键的值列表与主键的名列表的个数不一样");
-        return;
-    }
+-(NSString *)querySQLWithValues:(NSArray *)values forKeys:(NSArray *)keys owner:(NSString *)ownerId{
     
     NSString *tableName = [[self class] tableName];
     
@@ -305,16 +297,76 @@
     }
     
     [sql appendString:bodySql];
+    return sql;
+}
+
+/*
+ * 插入或更新 (联合主键)
+ * values 对应条件的值列表 ,keys 对应条件的 名列表
+ * ownerId(登陆用户id, 所有者) 有则更新该用户下的数据, 无则更新无该约束的数据
+ *
+ */
+-(void)insertOrUpdateValues:(NSArray *)values forKeys:(NSArray *)keys owner:(NSString *)ownerId{
     
-    [[self class] queryWithSql:sql block:^(NSArray *list) {
-        if (list.count > 0) {
-            [self updateValues:values forKeys:keys owner:ownerId];
-        } else {
-            [self insertWithOwner:ownerId];
+    if (values.count != keys.count) {
+        assert(@"主键的值列表与主键的名列表的个数不一样");
+        return;
+    }
+    
+    NSString *querySQL = [self querySQLWithValues:values forKeys:keys owner:ownerId];
+    
+    [[SFDataManager shareDataManager] executeQuery:^(FMDatabase *db, BOOL *rollback) {
+        if ([db open]) {
+            FMResultSet *rs = [db executeQuery:querySQL];
+            NSArray *result = [[self class] handleFMResultSet:rs];
+            if (result.count > 0) {
+                NSString *updateSQL = [self updateSQLWithValues:values forKeys:keys owner:ownerId];
+                [db executeUpdate:updateSQL];
+            } else {
+                NSString *insertSQL = [self insertSQLWithOwner:ownerId];
+                [db executeUpdate:insertSQL];
+            }
         }
     }];
 }
 
+/**
+ * 批量插入或更新
+ */
++(void)insertOrUpdateGroups:(NSArray<NSObject> *)groups
+                     values:(NSArray *)values
+                    forKeys:(NSArray *)keys
+                      owner:(NSString *)ownerId{
+    if (values.count != keys.count) {
+        assert(@"主键的值列表与主键的名列表的个数不一样");
+        return;
+    }
+    if (groups.count == 0) {
+        assert(@"没有数据可操作");
+        return;
+    }
+    
+    [[SFDataManager shareDataManager] executeQuery:^(FMDatabase *db, BOOL *rollback) {
+        if ([db open]) {
+            for (int i = 0; i < groups.count; i++) {
+                id obj = groups[i];
+                NSArray *subValues = values[i];
+                NSArray *subKeys = keys[i];
+                NSString *querySQL = [obj querySQLWithValues:subValues forKeys:subKeys owner:ownerId];
+                FMResultSet *rs = [db executeQuery:querySQL];
+                NSArray *result = [[self class] handleFMResultSet:rs];
+                if (result.count > 0) {
+                    NSString *updateSQL = [obj updateSQLWithValues:subValues forKeys:subKeys owner:ownerId];
+                    [db executeUpdate:updateSQL];
+                } else {
+                    NSString *insertSQL = [obj insertSQLWithOwner:ownerId];
+                    [db executeUpdate:insertSQL];
+                }
+            }
+        }
+    }];
+    
+}
 
 // UPDATE CircleDetailTable SET _gchat_desc = 'Fred' WHERE _ownerId = '3826'
 
@@ -327,43 +379,12 @@
 -(void)updateValue:(NSString *)var forKey:(NSString *)valueKey owner:(NSString *)ownerId{
     
     [self updateValues:@[var] forKeys:@[valueKey] owner:ownerId];
-    
-//    NSDictionary *attributeDic = [self attributeProrertyDic];
-//    NSArray *allKeys = [attributeDic allKeys];
-//    
-//    NSString *tableName = [[self class] tableName];
-//    
-//    NSString *headSql = [NSString stringWithFormat:@"UPDATE %@ SET ", tableName];
-//    NSMutableString *valueSql = [NSMutableString stringWithFormat:@""];
-//    
-//    for (int i = 0; i < allKeys.count; i++) {
-//        NSString *key = allKeys[i];
-//        id value = attributeDic[key];
-//        key = [key substringFromIndex:1];
-//        if (i == allKeys.count -1) {
-//            [valueSql appendFormat:@"%@='%@'", key, value];
-//            break;
-//        }
-//        [valueSql appendFormat:@"%@='%@',", key, value];
-//    }
-//    
-//    NSString *footerSql = [NSString stringWithFormat:@"WHERE %@='%@' AND %@='%@'", kOwnerName, ownerId, valueKey, var];
-//    if (!ownerId) {
-//        footerSql = [NSString stringWithFormat:@"WHERE %@='%@'", valueKey, var];
-//    }
-//    
-//    NSString *sql = [NSString stringWithFormat:@"%@%@%@", headSql, valueSql, footerSql];
-//    
-//    [[SFDataManager shareDataManager] updateSql:sql];
 }
 
-/*
- * 更新
- * value 对应条件的值 ,key 对应条件的 名
- * ownerId(登陆用户id, 所有者) 有则更新该用户下的数据, 无则更新无该约束的数据
- *
+/**
+ * 获取update SQL
  */
--(void)updateValues:(NSArray *)values forKeys:(NSArray *)valueKeys owner:(NSString *)ownerId{
+-(NSString *)updateSQLWithValues:(NSArray *)values forKeys:(NSArray *)valueKeys owner:(NSString *)ownerId{
     NSDictionary *attributeDic = [self attributeProrertyDic];
     NSArray *allKeys = [attributeDic allKeys];
     
@@ -404,25 +425,27 @@
         }
     }
     
-//    NSString *footerSql = [NSString stringWithFormat:@"WHERE %@='%@' AND %@='%@'", kOwnerName, ownerId, valueKey, var];
-//    if (!ownerId) {
-//        footerSql = [NSString stringWithFormat:@"WHERE %@='%@'", valueKey, var];
-//    } else {
-//        
-//    }
-    
     NSString *sql = [NSString stringWithFormat:@"%@%@%@", headSql, valueSql, footerSql];
+    return sql;
+}
+
+/*
+ * 更新
+ * value 对应条件的值 ,key 对应条件的 名
+ * ownerId(登陆用户id, 所有者) 有则更新该用户下的数据, 无则更新无该约束的数据
+ *
+ */
+-(void)updateValues:(NSArray *)values forKeys:(NSArray *)valueKeys owner:(NSString *)ownerId{
+    
+    NSString *sql = [self updateSQLWithValues:values forKeys:valueKeys owner:ownerId];
 //    NSLog(@"%@", sql);
     [[SFDataManager shareDataManager] updateSql:sql];
 }
 
-/*
- * 插入
- * ownerId 所有者(登陆用户的id), 有则关联,无则不关联
- *
+/**
+ * 获取插入数据 SQL
  */
--(void)insertWithOwner:(NSString *)ownerId{
-    
+-(NSString *)insertSQLWithOwner:(NSString *)ownerId{
     NSDictionary *attributeDic = [self attributeProrertyDic];
     NSArray *allKeys = [attributeDic allKeys];
     
@@ -474,7 +497,17 @@
     
     [sqlStr appendString:sqlKeyStr];
     [sqlStr appendString:sqlValueStr];
+    return sqlStr;
+}
+
+/*
+ * 插入
+ * ownerId 所有者(登陆用户的id), 有则关联,无则不关联
+ *
+ */
+-(void)insertWithOwner:(NSString *)ownerId{
     
+    NSString *sqlStr = [self insertSQLWithOwner:ownerId];
     BOOL res = [[SFDataManager shareDataManager] insertSql:sqlStr];
     if (!res) {
         NSLog(@"insert error");
@@ -500,6 +533,39 @@
     }];
 }
 
+/**
+ * handle  FMResultSet
+ */
++(NSMutableArray *)handleFMResultSet:(FMResultSet *)rs{
+    NSMutableArray *propertyList = [NSMutableArray array];
+    while ([rs next]) {
+        
+        id model = [[self alloc] init];
+        
+        NSArray *allKeys = [model attributePropertyList];
+        
+        NSMutableDictionary *propertyDic = [NSMutableDictionary dictionary];
+        for (int i = 0; i < allKeys.count; i++) {
+            
+            NSString *key = allKeys[i];
+            if ([key hasPrefix:@"_"]) {
+                key = [key substringFromIndex:1];
+            }
+            
+            id value = [rs stringForColumn:key];
+            if (value == nil) {
+                value = @"";
+            }
+            
+            [propertyDic setObject:value forKey:key];
+        }
+        
+        [propertyList addObject:propertyDic];
+        //            [allModels addObject:model];
+    }
+    return propertyList;
+}
+
 /** 查询
  * 返回结果为字典类型 列表
  *
@@ -509,32 +575,7 @@
     [[SFDataManager shareDataManager] querySql:sql finishBlock:^(FMResultSet *rs) {
         
         //        NSMutableArray *allModels = [NSMutableArray array];
-        NSMutableArray *propertyList = [NSMutableArray array];
-        while ([rs next]) {
-            
-            id model = [[self alloc] init];
-            
-            NSArray *allKeys = [model attributePropertyList];
-            
-            NSMutableDictionary *propertyDic = [NSMutableDictionary dictionary];
-            for (int i = 0; i < allKeys.count; i++) {
-                
-                NSString *key = allKeys[i];
-                if ([key hasPrefix:@"_"]) {
-                    key = [key substringFromIndex:1];
-                }
-                
-                id value = [rs stringForColumn:key];
-                if (value == nil) {
-                    value = @"";
-                }
-                
-                [propertyDic setObject:value forKey:key];
-            }
-            
-            [propertyList addObject:propertyDic];
-            //            [allModels addObject:model];
-        }
+        NSMutableArray *propertyList = [self handleFMResultSet:rs];
         if (block) {
             block(propertyList);
         }
