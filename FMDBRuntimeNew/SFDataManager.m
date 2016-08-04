@@ -149,7 +149,7 @@
         if (res == YES) {
             return fileDirectory;
         }
-        EKNSLog(@"创建目录失败");
+        NSLog(@"创建目录失败");
     }
     return fileDirectory;
 }
