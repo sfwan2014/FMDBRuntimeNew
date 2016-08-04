@@ -10,6 +10,7 @@
 
 @implementation SFDataManager{
     FMDatabaseQueue *databaseQueue;
+    FMDatabase *database;
 }
 
 -(void)dealloc{
@@ -30,6 +31,7 @@
     self = [super init];
     if (self) {
         databaseQueue = [FMDatabaseQueue databaseQueueWithPath:self.filePath];
+        database = [FMDatabase databaseWithPath:self.filePath];
     }
     return self;
 }
@@ -79,7 +81,7 @@
 //            return res;
         }
     }];
-//    return NO;
+    return YES;
 }
 
 -(void)deleteSql:(NSString *)sql{
@@ -99,15 +101,23 @@
 }
 
 -(void)querySql:(NSString *)sql finishBlock:(QueryFinishBlock)block{
-    [databaseQueue inDatabase:^(FMDatabase *db) {
-        if ([db open]) {
-            FMResultSet *rs = [db executeQuery:sql];
-            if (block) {
-                block(rs);
-            }
-//            [db close];
+//    [databaseQueue inTransaction:^(FMDatabase *db, BOOL *rollback) {
+//        if ([db open]) {
+//            FMResultSet *rs = [db executeQuery:sql];
+//            if (block) {
+//                block(rs);
+//            }
+////            [db close];
+//        }
+//    }];
+    
+    if ([database open]) {
+        FMResultSet *rs = [database executeQuery:sql];
+        if (block) {
+            block(rs);
         }
-    }];
+        [database close];
+    }
 }
 // 多线程 执行查询, 插入, 更新接口
 -(void)executeQuery:(void (^)(FMDatabase *db, BOOL *rollback))block {
@@ -139,7 +149,7 @@
         if (res == YES) {
             return fileDirectory;
         }
-        assert("创建目录失败");
+        EKNSLog(@"创建目录失败");
     }
     return fileDirectory;
 }
