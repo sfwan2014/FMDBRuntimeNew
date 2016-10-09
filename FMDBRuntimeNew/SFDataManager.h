@@ -15,6 +15,7 @@ typedef void (^QueryFinishBlock) (FMResultSet *set);
 
 @property (nonatomic, copy) QueryFinishBlock block;
 -(NSString *)filePath;
++(NSString *)toPath;
 +(SFDataManager *)shareDataManager;
 -(void)createTableWithSql:(NSString *)sql;
 -(BOOL)insertSql:(NSString *)sql;

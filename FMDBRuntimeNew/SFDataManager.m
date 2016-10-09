@@ -101,23 +101,23 @@
 }
 
 -(void)querySql:(NSString *)sql finishBlock:(QueryFinishBlock)block{
-//    [databaseQueue inTransaction:^(FMDatabase *db, BOOL *rollback) {
-//        if ([db open]) {
-//            FMResultSet *rs = [db executeQuery:sql];
-//            if (block) {
-//                block(rs);
-//            }
-////            [db close];
-//        }
-//    }];
-    
-    if ([database open]) {
-        FMResultSet *rs = [database executeQuery:sql];
-        if (block) {
-            block(rs);
+    [databaseQueue inTransaction:^(FMDatabase *db, BOOL *rollback) {
+        if ([db open]) {
+            FMResultSet *rs = [db executeQuery:sql];
+            if (block) {
+                block(rs);
+            }
+//            [db close];
         }
-        [database close];
-    }
+    }];
+    
+//    if ([database open]) {
+//        FMResultSet *rs = [database executeQuery:sql];
+//        if (block) {
+//            block(rs);
+//        }
+//        [database close];
+//    }
 }
 // 多线程 执行查询, 插入, 更新接口
 -(void)executeQuery:(void (^)(FMDatabase *db, BOOL *rollback))block {
@@ -127,6 +127,16 @@
 #pragma mark - getter
 -(NSString *)filePath{
 
+    NSString *documentDirectory = [[self class] cachePath];
+    NSString *dbPath = [documentDirectory stringByAppendingPathComponent:@"dbc.sqlite"];
+    
+    NSLog(@"cachepath: %@", dbPath);
+    
+    return dbPath;
+}
+
++(NSString *)toPath{
+    
     NSString *documentDirectory = [self cachePath];
     NSString *dbPath = [documentDirectory stringByAppendingPathComponent:@"dbc.sqlite"];
     
@@ -135,8 +145,7 @@
     return dbPath;
 }
 
-
--(NSString *)cachePath{
++(NSString *)cachePath{
     //获取Documents路径
     NSArray*paths=NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
     NSString*path=[paths objectAtIndex:0];
