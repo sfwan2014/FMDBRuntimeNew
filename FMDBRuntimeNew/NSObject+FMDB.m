@@ -195,6 +195,10 @@
 }
 
 +(void)createAlertWithKey:(NSArray *)primaryKeys owner:(BOOL)hasOwner{
+    NSMutableArray *newPrimaryKeys = [NSMutableArray array];
+    if (primaryKeys.count > 0) {
+        newPrimaryKeys = [NSMutableArray arrayWithArray:primaryKeys];
+    }
     
     NSString *tableName = [[self class]tableName];
     NSMutableString *mutSql = [NSMutableString stringWithFormat:@"CREATE TABLE IF NOT EXISTS '%@' (",tableName];
@@ -212,9 +216,10 @@
     if (hasOwner) {
         // 登陆用户id
         [mutSql appendFormat:@"'%@' BLOB,", kOwnerName];
+        [newPrimaryKeys addObject:kOwnerName];
     }
     // 设置联合主键
-    NSString *primaryKey = [primaryKeys componentsJoinedByString:@","];
+    NSString *primaryKey = [newPrimaryKeys componentsJoinedByString:@","];
     [mutSql appendFormat:@"PRIMARY KEY(%@))", primaryKey];
     
     

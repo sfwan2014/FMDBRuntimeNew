@@ -16,7 +16,7 @@ Pod::Spec.new do |s|
   #
 
   s.name         = "FMDBRuntimeNew"
-  s.version      = "3.0.2"
+  s.version      = "3.0.3"
   s.summary      = "Use FMDB With Runtime to insert,delete,query the data"
 
   s.description  = <<-DESC
