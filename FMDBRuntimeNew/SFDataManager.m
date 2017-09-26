@@ -7,7 +7,7 @@
 //
 
 #import "SFDataManager.h"
-
+#import "FMDB.h"
 @implementation SFDataManager{
     FMDatabaseQueue *databaseQueue;
     FMDatabase *database;

@@ -8,6 +8,7 @@
 
 #import "NSObject+FMDB.h"
 #import "SFDataManager.h"
+#import "FMDB.h"
 #import <objc/runtime.h>
 
 #define kOwnerName      @"ownerId"
