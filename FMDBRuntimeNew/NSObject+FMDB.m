@@ -488,7 +488,9 @@
     for (int i = 0; i < allKeys.count; i++) {
         NSString *key = allKeys[i];
         NSString *value = newDic[key];
-        
+        if ([value isKindOfClass:[NSString class]] && [value rangeOfString:@"'"].location != NSNotFound) {
+            value = [value stringByReplacingOccurrencesOfString:@"'" withString:@"''"];
+        }
         if (i == allKeys.count - 1) {
             [sqlKeyStr appendFormat:@"'%@' ", key];
             [sqlValueStr appendFormat:@"'%@' ", value];

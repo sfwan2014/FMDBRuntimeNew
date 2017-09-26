@@ -147,6 +147,7 @@
 
 +(NSString *)cachePath{
     //获取Documents路径
+    
     NSArray*paths=NSSearchPathForDirectoriesInDomains(NSDocumentDirectory,NSUserDomainMask,YES);
     NSString*path=[paths objectAtIndex:0];
     NSString *fileDirectory = [NSString stringWithFormat:@"%@/%@", path, @"list_data"];
